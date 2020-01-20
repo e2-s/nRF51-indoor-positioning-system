@@ -51,70 +51,64 @@
 #define UUID128_SIZE            16                              /**< Size of 128 bit UUID */
 
 
-//Added by Kumar
-#define NO_OF_REF_NODES					4
-//#define ENVI_CONST							1.8//2.0 //1.6 //2.2//1.8
-//#define AVG_1M									(-61) //Absolute value of engergy, need to be clarified
-#define AVG_SAMPLE_COUNT				20
+/* Added by Kumar for Indoor positioning */
+#define NO_OF_REF_NODES				4
+//#define ENVI_CONST				1.8
+//#define AVG_1M				(-61) /* Absolute value of engergy */
+#define AVG_SAMPLE_COUNT			20
 #define CONST_SAMPLE_COUNT			100
-#define B1X											1.5 //H3.65
+
+/* Below variables starts with B denotes the X and Y coordinates of Beacons 1 to 4 */
+#define B1X											1.5 
 #define B1Y											0
 #define B2X											0
-#define B2Y											3.35 //H4.87
-#define B3X											3.65//H5.48 //6.0
-#define B3Y											3 //H8.53 //2.43
+#define B2Y											3.35 
+#define B3X											3.65
+#define B3Y											3 
 #define B4X											3
 #define B4Y											3
-//Added by Kumar
+/* Added by Kumar for Indoor positioning */
+
 static ble_nus_c_t              m_ble_nus_c;                    /**< Instance of NUS service. Must be passed to all NUS_C API calls. */
 static ble_db_discovery_t       m_ble_db_discovery;             /**< Instance of database discovery module. Must be passed to all db_discovert API calls */
 
-//Added by Kumar for using RSSI 
-//Global Variables
+/* Added by Kumar for using RSSI  */
 int8_t rssi_inst[NO_OF_REF_NODES];
 float dist_rssi[NO_OF_REF_NODES]; //Distance from each reference nodes
 float alpha = 0.75; //only for RSSI smoothing
 float dev_x,dev_y;
 ble_gap_addr_t ref_node_addr[NO_OF_REF_NODES];
 uint8_t ref_node_entry[NO_OF_REF_NODES][BLE_GAP_ADDR_LEN] = {	{0xC7,0x54,0x63,0x63,0xA1,0xD9},
-																															{0x14,0xC5,0x86,0x4F,0x1C,0xE5},
-																															{0x40,0x8C,0x1F,0xF8,0x94,0xCF},
-																															{0x15,0x43,0x66,0x60,0xB3,0xE6}};
 																															
-//for taking avg of rssi
+/* Added by Kumar for for taking avg of RSSI */
 
-		//int8_t no_avg = 100;
-		uint8_t count=0;
-		//uint8_t calc_dist=0; //Flag to enable distance calculation - in case of moving avg or specific interval etc.,
-	int16_t rssi_sum[NO_OF_REF_NODES] = {0, 0, 0, 0};
-	int8_t rssi_samples[NO_OF_REF_NODES][AVG_SAMPLE_COUNT+1];																																
+//int8_t no_avg = 100;
+uint8_t count=0;
+//uint8_t calc_dist=0; /* Flag to enable distance calculation - in case of moving avg or specific interval etc., */
+int16_t rssi_sum[NO_OF_REF_NODES] = {0, 0, 0, 0};
+int8_t rssi_samples[NO_OF_REF_NODES][AVG_SAMPLE_COUNT+1];																																
 		int8_t rssi_avg[NO_OF_REF_NODES],rssi_avg_prev[NO_OF_REF_NODES];																											
 		//int8_t 	rssi_samples[100];
 	
-	//for sliding window
-	int8_t rssi_slide[NO_OF_REF_NODES];
-//for taking avg of rssi
+		/* for sliding window */
+		int8_t rssi_slide[NO_OF_REF_NODES];
 																								
-		//for envinronmental factors
-		int8_t RSSI_AVG_1M[NO_OF_REF_NODES] = {-61, -56, -61, 0};
-		uint8_t sample_count = 0;
-		float ENVI_CONST[NO_OF_REF_NODES] = {1.6, 2.0, 1.8, 0};
-		float estimated_envi_const[NO_OF_REF_NODES];
-		float calibration_distance = 2;
-		
-
-		float const_sum[NO_OF_REF_NODES] = {0, 0, 0, 0};
-		float const_avg[NO_OF_REF_NODES];
-		float const_samples[CONST_SAMPLE_COUNT][NO_OF_REF_NODES];
-																															
-//Added by Kumar for using RSSI 
+/* Added by Kumar for envinronmental factors */
+	int8_t RSSI_AVG_1M[NO_OF_REF_NODES] = {-61, -56, -61, 0};
+	uint8_t sample_count = 0;
+	float ENVI_CONST[NO_OF_REF_NODES] = {1.6, 2.0, 1.8, 0};
+	float estimated_envi_const[NO_OF_REF_NODES];
+	float calibration_distance = 2;
+	float const_sum[NO_OF_REF_NODES] = {0, 0, 0, 0};
+	float const_avg[NO_OF_REF_NODES];
+	float const_samples[CONST_SAMPLE_COUNT][NO_OF_REF_NODES];
 	
-//Addded by Kumar for Kalman Filtering	
+/* Addded by Kumar for Kalman Filtering	*/
 	
- //initial values for the Kalman filter 
+ /* Initial values for the Kalman filter  */
     float RSSI_est_prev[NO_OF_REF_NODES] = {0, 0, 0, 0};
     float P_prev[NO_OF_REF_NODES] = {0, 0, 0, 0}; 
-    //the noise in the system  (to be updated by repetitive testing/ trail and error method)
+    /* The noise in the system  (to be updated by repetitive testing/ trail and error method) */
     float const_Q = 0.022; //0.065
     float const_R = 0.617; //1.4
      
@@ -124,9 +118,7 @@ uint8_t ref_node_entry[NO_OF_REF_NODES][BLE_GAP_ADDR_LEN] = {	{0xC7,0x54,0x63,0x
     float RSSI_temp_est[NO_OF_REF_NODES]; 
     float RSSI_est[NO_OF_REF_NODES]; 
     float z_measured[NO_OF_REF_NODES]; //the RSSI value measured
-
 	
-//Addded by Kumar for Kalman Filtering		
 	
 /**
  * @brief Connection parameters requested for connection.
@@ -404,17 +396,20 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
         case BLE_GAP_EVT_ADV_REPORT:
         {
             const ble_gap_evt_adv_report_t * p_adv_report = &p_gap_evt->params.adv_report;
-						//Added by Kumar - for printing RSSI Value
-						//rssi_inst = p_adv_report->rssi;
-						//printf("\nRSSI : %d",p_adv_report->rssi);
-//						printf("Ref Node MAC %02x%02x%02x%02x%02x%02x\r\n",
-//                             p_adv_report->peer_addr.addr[0],
-//                             p_adv_report->peer_addr.addr[1],
-//                             p_adv_report->peer_addr.addr[2],
-//                             p_adv_report->peer_addr.addr[3],
-//                             p_adv_report->peer_addr.addr[4],
-//                             p_adv_report->peer_addr.addr[5]
-//                             );
+/* Added by Kumar - for printing RSSI Value */
+
+		/*
+rssi_inst = p_adv_report->rssi;
+printf("\nRSSI : %d",p_adv_report->rssi);
+printf("Ref Node MAC %02x%02x%02x%02x%02x%02x\r\n",
+p_adv_report->peer_addr.addr[0],
+p_adv_report->peer_addr.addr[1],
+p_adv_report->peer_addr.addr[2],
+p_adv_report->peer_addr.addr[3],
+p_adv_report->peer_addr.addr[4],
+p_adv_report->peer_addr.addr[5]
+                             );
+		*/
 						for (uint8_t cntn = 0; cntn < NO_OF_REF_NODES; cntn++)
 						{
 								if ( (ref_node_entry[cntn][0] == p_adv_report->peer_addr.addr[0]) && 
@@ -428,7 +423,8 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
 										rssi_inst[cntn] = p_adv_report->rssi;
 								}
 							}
-						//Added by Kumar - for printing RSSI Value
+/* Added by Kumar - for printing RSSI Value */
+		
             if (is_uuid_present(&m_nus_uuid, p_adv_report))
             {
 
@@ -640,35 +636,40 @@ static void power_manage(void)
     APP_ERROR_CHECK(err_code);
 }
 
-//Kalman filtering for measuring RSSI value
+/* 
+* Author : Kumar, e2-s
+* Purpose: Kalman filtering for measuring RSSI value
+*/
 static void Kalman_RSSI(void)
 {
 	for(uint8_t cnt_node = 0; cnt_node < NO_OF_REF_NODES; cnt_node++)
 	{
-				//Prediction  phase
+				/* Prediction  phase */
         RSSI_temp_est[cnt_node] = RSSI_est_prev[cnt_node]; 
         P_temp[cnt_node] = P_prev[cnt_node] + const_Q; 
-        //calculate the Kalman gain 
+        /* calculate the Kalman gain */
         K[cnt_node] = P_temp[cnt_node] * (1.0/(P_temp[cnt_node] + const_R));
-        //measure RSSI
+        /* measure RSSI */
         z_measured[cnt_node] = rssi_inst[cnt_node];
-        //correct phase
+        /* correct phase */
         RSSI_est[cnt_node] = RSSI_temp_est[cnt_node] + K[cnt_node] * (z_measured[cnt_node] - RSSI_temp_est[cnt_node]);  
         P[cnt_node] = (1 - K[cnt_node]) * P_temp[cnt_node]; 
-        //we have our new system 
+
          
         printf("\r\n Mesaured RSSI of Node %d : %6.3f",(cnt_node+1),z_measured[cnt_node]); 
         printf("\r\n Kalman   RSSI of Node %d : %6.3f",(cnt_node+1),RSSI_est[cnt_node]); 
          
                 
-        //update prev values
+        /* update previous values */
         P_prev[cnt_node] = P[cnt_node]; 
         RSSI_est_prev[cnt_node] = RSSI_est[cnt_node]; 
 	}
 }
 
-
-//Function to calculate environmental constant 'n'
+/* 
+* Author : Kumar, e2-s
+* Purpose: Function to calculate environmental constant 'n'
+*/
 static void calc_envi_const()
 {
 	
@@ -707,35 +708,16 @@ static void calc_envi_const()
 			
 }
 
-//Function to calculate average of RSSI
+/* 
+* Author : Kumar, e2-s
+* Purpose: To calculate average of RSSI
+*/
 static void avg_rssi(uint8_t no_avg)
 {
 	
 	int16_t rssi_sum[NO_OF_REF_NODES] = {0, 0, 0, 0};
 	int16_t rssi_samples[no_avg][NO_OF_REF_NODES];
 	
-		/*
-	//old logic inside infinite loop in main
-
-		if(count == no_avg)
-		{
-				rssi_sum = 0;
-				for(index = 0;index < no_avg;index++)
-						rssi_sum += rssi_samples[index];
-//						printf("\n RSSI Sum : %d",rssi_sum);
-				rssi_avg = rssi_sum / no_avg;
-//						printf("\n RSSI Average : %d",rssi_avg);
-				count = 0;
-				
-		}
-		else
-		{
-				//printf("\nRSSI : %d",rssi_inst);
-				rssi_samples[count]= rssi_inst;
-				count++;
-		}
-		//old logic inside infinite loop in main
-		*/
 		if(count == no_avg)
 		{
 				
@@ -764,7 +746,10 @@ static void avg_rssi(uint8_t no_avg)
 		
 }						
 
-//Function to calculate moving average
+/* 
+* Author : Kumar, e2-s
+* Purpose: To calculate moving average
+*/
 static void mov_avg_rssi()
 {
 	
@@ -793,7 +778,10 @@ static void mov_avg_rssi()
 		
 }						
 
-//Function to calculate average - sliding window
+/* 
+* Author : Kumar, e2-s
+* Purpose: To calculate average - sliding window
+*/
 static void avg_sliding_window()
 {
 	
@@ -816,8 +804,10 @@ static void avg_sliding_window()
 
 }						
 
-
-//Function to calculate distance from RSSI
+/* 
+* Author : Kumar, e2-s
+* Purpose: To calculate distance from RSSI
+*/
 static void distance_estimate()
 {
 		float num[NO_OF_REF_NODES],dem[NO_OF_REF_NODES];
@@ -846,7 +836,10 @@ static void distance_estimate()
 		}
 }
 
-//Function uses Trilateration algorithm to estimate the distance of the device
+/* 
+* Author : Kumar, e2-s
+* Purpose: Function uses Trilateration algorithm to estimate the distance of the device
+*/
 static void locate_device(void)
 {
 		float VarA,VarB,VarC;
@@ -876,31 +869,17 @@ static void locate_device(void)
 		printf("\n\r Location of device :(%f,%f)",dev_x,dev_y); 
 }
 
-//void config_ref_node (void)
-//{
-//	
-//		
-//		uint8_t ref_node_entry2[4][6] = {{0xD9,0xA1,0x63,0x63,0x54,0xC7},
-//											{0xD9,0xA1,0x63,0x63,0x54,0xC7},
-//											{0xD9,0xA1,0x63,0x63,0x54,0xC7},
-//											{0xD9,0xA1,0x63,0x63,0x54,0xC7}};
-//	
-//	
-//	
-//}
-
-
 int main(void)
 {
 
-		//Added by Kumar for calculating Averages
-//		int8_t no_avg = 100;
-//		uint8_t count=0,index;
-//		int16_t rssi_avg,rssi_sum = 0;
-//		int8_t 	rssi_samples[100];
-//		int ref_qty;
-			
-		//Added by Kumar for calculating Averages
+		/* Added by Kumar for calculating Averages */
+		/*
+		int8_t no_avg = 100;
+		uint8_t count=0,index;
+		int16_t rssi_avg,rssi_sum = 0;
+		int8_t 	rssi_samples[100];
+		int ref_qty;
+		*/
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, NULL);
 
     uart_init();
@@ -914,22 +893,22 @@ int main(void)
     scan_start();
     //printf("Scan started\r\n");
 		
-		//Added By Kumar
-		
-//		printf("Enter the number of Reference nodes:\n");
-//		scanf("%d",&ref_qty);
-		//config_ref_node();
-		//Added By Kumar
+	/* Added By Kumar for Indoor Positioning */
+	/*
+	printf("Enter the number of Reference nodes:\n");
+	scanf("%d",&ref_qty);
+	config_ref_node();
+	*/
     for (;;)
     {
         //power_manage();
-				//avg_rssi(100);
-				//mov_avg_rssi();
-				//avg_sliding_window();
-				Kalman_RSSI();
-				//calc_envi_const();
-				distance_estimate();
-				locate_device();
-				nrf_delay_ms(3000);
+	//avg_rssi(100);
+	//mov_avg_rssi();
+	//avg_sliding_window();
+	Kalman_RSSI();
+	//calc_envi_const();
+	distance_estimate();
+	locate_device();
+	nrf_delay_ms(3000);
     }
 }
